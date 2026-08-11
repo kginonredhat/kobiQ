@@ -38,7 +38,8 @@ QStringList HistoryStore::candidateStorePaths() const
   QStringList paths;
   paths << storePath();
 
-  # Legacy history paths from earlier project name (migration only).
+  // Legacy history paths from earlier project name (migration only).
+  const QString home = QDir::homePath();
   paths << home + QStringLiteral("/.local/share/clipditto/clipditto/history.json");
   paths << home + QStringLiteral("/.local/share/clipditto/history.json");
 
