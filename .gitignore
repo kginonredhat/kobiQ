@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+cmake-build-*/
+.cache/
+out/
+*.o
+*.a
+*.so
+*.so.*
+
+# Qt / IDE
+*.user
+*.autosave
+CMakeLists.txt.user
+.vscode/
+.idea/
+*.qmlc
+*.jsc
+
+# Runtime / user data (never commit clipboard history)
+history.json
+*.history.json
+kobiQ-history-*.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+*~

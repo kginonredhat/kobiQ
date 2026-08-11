@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/icons">
+    <file alias="kobiQ.svg">icons/kobiQ.svg</file>
+    <file alias="kobiQ-tray.png">icons/kobiQ-tray.png</file>
+  </qresource>
+</RCC>
