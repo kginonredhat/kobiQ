@@ -13,6 +13,8 @@ public:
   TrayController(MainWindow *window, QObject *parent = nullptr);
 
 private:
+  void setupTray();
+
   MainWindow *m_window;
   QSystemTrayIcon *m_tray = nullptr;
   QMenu *m_menu = nullptr;

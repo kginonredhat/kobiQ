@@ -1,0 +1,7 @@
+#!/bin/sh
+# GNOME Wayland: gtk-launch passes an activation token via D-Bus to the running app.
+DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
+if command -v gtk-launch >/dev/null 2>&1; then
+  gtk-launch org.kobiq.Application && exit 0
+fi
+exec "$DIR/kobiq-show" "$@"

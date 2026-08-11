@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>kobiQ.desktop</id>
+  <name>kobiQ</name>
+  <summary>kobiQ clipboard manager for Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>kginonredhat</developer_name>
+  <description>
+    <p>
+      kobiQ is a local-first clipboard manager for Linux. It keeps a searchable
+      history of text and images, lives in the system tray, and never sends
+      your clipboard to the cloud.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/kginonredhat/kobiQ</url>
+  <url type="bugtracker">https://github.com/kginonredhat/kobiQ/issues</url>
+  <launchable type="desktop-id">kobiQ.desktop</launchable>
+  <provides>
+    <binary>kobiQ</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.5" date="2026-08-13">
+      <description>
+        <p>Also copy restored items to Primary Selection for middle-click paste.</p>
+      </description>
+    </release>
+    <release version="0.1.4" date="2026-08-12">
+      <description>
+        <p>Wayland show/hide fixes, D-Bus activation, kobiq-activate shortcut helper, version in title bar.</p>
+      </description>
+    </release>
+  </releases>
+</component>

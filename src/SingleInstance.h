@@ -4,22 +4,24 @@
 #include <QString>
 
 class QLocalServer;
-class QLocalSocket;
 
 class SingleInstance : public QObject
 {
   Q_OBJECT
 public:
-  explicit SingleInstance(const QString &key, QObject *parent = nullptr);
+  explicit SingleInstance(QObject *parent = nullptr);
   ~SingleInstance() override;
 
+  static bool isPrimaryRunning();
+  static bool requestShow();
+
   bool tryBecomePrimary();
-  bool sendToggleToPrimary();
+  bool sendShowToPrimary();
 
 signals:
-  void toggleRequested();
+  void showRequested(const QString &activationToken);
 
 private:
-  QString m_key;
+  QString m_socketPath;
   QLocalServer *m_server = nullptr;
 };

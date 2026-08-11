@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=kobiQ
+GenericName=Clipboard Manager
+Comment=kobiQ clipboard manager for Linux
+Exec=kobiQ
+Icon=kobiQ
+Terminal=false
+Categories=Utility;Qt;
+Keywords=clipboard;paste;history;clip;
+StartupNotify=false
+DBusActivatable=true
+X-GNOME-UsesNotifications=false

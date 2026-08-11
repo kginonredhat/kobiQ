@@ -15,28 +15,48 @@ PasteHelper::PasteHelper(ClipboardMonitor *monitor, QObject *parent)
 {
 }
 
+void PasteHelper::copyToClipboard(const ClipItem &item)
+{
+  putOnClipboard(item);
+}
+
 void PasteHelper::putOnClipboard(const ClipItem &item)
 {
   auto *clipboard = QGuiApplication::clipboard();
-  auto *mime = new QMimeData();
+  if (m_monitor)
+    m_monitor->setIgnoreNext(true);
 
   if (item.kind == ClipKind::Image) {
+    auto *mime = new QMimeData();
     QImage image;
     image.loadFromData(item.imagePng, "PNG");
     mime->setImageData(image);
-  } else {
-    mime->setText(item.text);
+    // Ownership of mime transfers to the clipboard for Clipboard mode.
+    clipboard->setMimeData(mime, QClipboard::Clipboard);
+    // Also put on Primary Selection (middle-click paste) when supported.
+    if (clipboard->supportsSelection()) {
+      auto *selectionMime = new QMimeData();
+      selectionMime->setImageData(image);
+      clipboard->setMimeData(selectionMime, QClipboard::Selection);
+    }
+    return;
   }
 
-  if (m_monitor)
-    m_monitor->setIgnoreNext(true);
-  clipboard->setMimeData(mime);
+  clipboard->setText(item.text, QClipboard::Clipboard);
+  // Also put on Primary Selection (middle-click paste) when supported.
+  if (clipboard->supportsSelection())
+    clipboard->setText(item.text, QClipboard::Selection);
 }
 
 void PasteHelper::simulatePaste()
 {
+  // On Wayland, synthetic key injection requires the Remote Desktop portal
+  // ("Allow Remote Interaction") — skip it; clipboard content is already set.
+  if (QGuiApplication::platformName().contains(QStringLiteral("wayland"),
+                                               Qt::CaseInsensitive))
+    return;
+
   // Best-effort auto-paste. Works well on X11 with xdotool.
-  // On Wayland this may no-op; content is still on the clipboard.
   if (QProcess::execute(QStringLiteral("xdotool"),
                         {QStringLiteral("key"), QStringLiteral("--clearmodifiers"),
                          QStringLiteral("ctrl+v")})
@@ -51,7 +71,6 @@ void PasteHelper::simulatePaste()
 
 void PasteHelper::pasteItem(const ClipItem &item)
 {
-  putOnClipboard(item);
-  // Give the previous window a moment to regain focus after we hide.
+  copyToClipboard(item);
   QTimer::singleShot(80, this, [this]() { simulatePaste(); });
 }
