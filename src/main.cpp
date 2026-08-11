@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
   QCommandLineParser parser;
   parser.setApplicationDescription(
-      QStringLiteral("Local-first clipboard manager inspired by Ditto"));
+      QStringLiteral("kobiQ clipboard manager for Linux"));
   parser.addHelpOption();
   parser.addVersionOption();
   QCommandLineOption toggleOption(QStringLiteral("toggle"),

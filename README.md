@@ -1,6 +1,6 @@
 # kobiQ
 
-Local-first clipboard manager for Linux, inspired by [Ditto](https://sabrogden.github.io/Ditto/).  
+kobiQ clipboard manager for Linux.  
 Built with **Qt 6** — tested on Fedora (GNOME / Wayland).
 
 No login. No cloud. No telemetry.
