@@ -21,18 +21,13 @@ public:
 
 public slots:
   void refresh();
-  void toggleVisible();
-
-protected:
-  void showEvent(QShowEvent *event) override;
-  void hideEvent(QHideEvent *event) override;
-  void keyPressEvent(QKeyEvent *event) override;
-  void mousePressEvent(QMouseEvent *event) override;
-  void mouseMoveEvent(QMouseEvent *event) override;
-  void mouseReleaseEvent(QMouseEvent *event) override;
-  bool eventFilter(QObject *watched, QEvent *event) override;
+  void showAndFocus();
+  void showWithActivationToken(const QString &activationToken);
+  void hideToBackground();
+  void exitApplication();
 
 private slots:
+  void applyPendingActivation();
   void onFilterChanged(const QString &text);
   void pasteCurrent();
   void deleteCurrent();
@@ -40,6 +35,16 @@ private slots:
   void openSettings();
   void exportHistory();
   void importHistory();
+
+protected:
+  void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
+  void closeEvent(QCloseEvent *event) override;
+  void keyPressEvent(QKeyEvent *event) override;
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
   enum ResizeEdge {
@@ -64,6 +69,8 @@ private:
   void applyResize(const QPoint &globalPos);
   bool isDragHandle(QObject *watched) const;
   bool handleWindowMouse(QObject *watched, QMouseEvent *mouse, QEvent::Type type);
+  bool isWayland() const;
+  void centerOnActiveScreen();
 
   HistoryStore *m_store;
   PasteHelper *m_pasteHelper;
@@ -74,6 +81,10 @@ private:
   QLabel *m_status = nullptr;
   QPushButton *m_menuBtn = nullptr;
   QString m_query;
+  QString m_pendingActivationToken;
+  bool m_activationApplied = false;
+  bool m_exiting = false;
+  QRect m_savedFrameGeometry;
 
   ResizeEdge m_resizeEdges = EdgeNone;
   bool m_resizing = false;

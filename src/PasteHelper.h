@@ -12,6 +12,7 @@ class PasteHelper : public QObject
 public:
   PasteHelper(ClipboardMonitor *monitor, QObject *parent = nullptr);
 
+  void copyToClipboard(const ClipItem &item);
   void pasteItem(const ClipItem &item);
 
 private:

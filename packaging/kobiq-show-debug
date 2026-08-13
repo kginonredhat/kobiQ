@@ -1,0 +1,11 @@
+#!/bin/bash
+# Debug wrapper for GNOME shortcuts. Logs to /tmp/kobiq-shortcut.log
+DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
+LOG="/tmp/kobiq-shortcut.log"
+{
+  echo "---- $(date -Is) ----"
+  echo "XDG_ACTIVATION_TOKEN=${XDG_ACTIVATION_TOKEN:-}"
+  echo "DESKTOP_STARTUP_ID=${DESKTOP_STARTUP_ID:-}"
+  echo "command=$*"
+} >>"$LOG"
+exec "$DIR/kobiq-show" "$@"

@@ -1,9 +1,12 @@
+#include "AppVersion.h"
 #include "MainWindow.h"
 
 #include "HistoryStore.h"
 #include "PasteHelper.h"
 
 #include <QAction>
+#include <QApplication>
+#include <QCloseEvent>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QGuiApplication>
@@ -24,20 +27,27 @@
 #include <QScreen>
 #include <QSettings>
 #include <QShowEvent>
+#include <QCursor>
 #include <QSize>
 #include <QSizeGrip>
 #include <QStandardPaths>
+#include <QSystemTrayIcon>
+#include <QTimer>
 #include <QWindow>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include <cstdlib>
 
 MainWindow::MainWindow(HistoryStore *store, PasteHelper *pasteHelper, QWidget *parent)
   : QMainWindow(parent)
   , m_store(store)
   , m_pasteHelper(pasteHelper)
 {
-  setWindowTitle(QStringLiteral("kobiQ"));
-  setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
+  setWindowTitle(kobiQVersionedTitle());
+  // Normal window (not Qt::Tool) so GNOME keeps the process when hidden to tray.
+  setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
+  setAttribute(Qt::WA_QuitOnClose, false);
   setMinimumSize(360, 320);
   setMouseTracking(true);
   restoreGeometrySettings();
@@ -64,18 +74,29 @@ MainWindow::MainWindow(HistoryStore *store, PasteHelper *pasteHelper, QWidget *p
   m_menuBtn->setToolTip(QStringLiteral("Menu"));
   m_menuBtn->setFlat(true);
 
-  auto *menu = new QMenu(m_menuBtn);
+  auto *menu = new QMenu(this);
+  menu->setMinimumWidth(200);
+  menu->setWindowFlags(menu->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Popup);
   auto *settingsAction = menu->addAction(QStringLiteral("Settings…"));
   menu->addSeparator();
   auto *exportAction = menu->addAction(QStringLiteral("Export history…"));
   auto *importAction = menu->addAction(QStringLiteral("Import history…"));
-  m_menuBtn->setMenu(menu);
+  menu->addSeparator();
+  auto *exitAction = menu->addAction(QStringLiteral("Exit kobiQ"));
+  exitAction->setMenuRole(QAction::NoRole);
+  // Don't use QPushButton::setMenu — on Wayland + always-on-top it can clip items.
+  connect(m_menuBtn, &QPushButton::clicked, this, [this, menu]() {
+    const QPoint pos = m_menuBtn->mapToGlobal(QPoint(0, m_menuBtn->height()));
+    menu->popup(pos);
+  });
 
-  m_titleLabel = new QLabel(QStringLiteral("kobiQ"), titleBar);
+  m_titleLabel = new QLabel(kobiQVersionedTitle(), titleBar);
   QFont titleFont = m_titleLabel->font();
   titleFont.setPointSize(14);
   titleFont.setBold(true);
   m_titleLabel->setFont(titleFont);
+  m_titleLabel->setMinimumWidth(
+      m_titleLabel->fontMetrics().horizontalAdvance(m_titleLabel->text()) + 4);
   m_titleLabel->setCursor(Qt::OpenHandCursor);
   m_titleLabel->setToolTip(QStringLiteral("Drag to move window"));
 
@@ -125,10 +146,13 @@ MainWindow::MainWindow(HistoryStore *store, PasteHelper *pasteHelper, QWidget *p
   layout->addLayout(buttons);
   layout->addLayout(footer);
 
-  connect(closeBtn, &QPushButton::clicked, this, &MainWindow::hide);
+  connect(closeBtn, &QPushButton::clicked, this, &MainWindow::hideToBackground);
   connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
   connect(exportAction, &QAction::triggered, this, &MainWindow::exportHistory);
   connect(importAction, &QAction::triggered, this, &MainWindow::importHistory);
+  connect(exitAction, &QAction::triggered, this, [this]() {
+    QTimer::singleShot(0, this, &MainWindow::exitApplication);
+  });
   connect(m_filter, &QLineEdit::textChanged, this, &MainWindow::onFilterChanged);
   connect(m_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *) {
     pasteCurrent();
@@ -160,8 +184,11 @@ MainWindow::MainWindow(HistoryStore *store, PasteHelper *pasteHelper, QWidget *p
       "QPushButton#menuButton { padding: 0; border: none; border-radius: 6px; "
       "background: transparent; font-size: 18px; color: #5c564c; }"
       "QPushButton#menuButton:hover { background: #e8dfd4; color: #1c1b19; }"
-      "QPushButton#menuButton::menu-indicator { image: none; width: 0; }"
-      "QWidget#titleBar { background: transparent; }"));
+      "QWidget#titleBar { background: transparent; }"
+      "QMenu { background: #fff; border: 1px solid #cfc8bc; padding: 4px; }"
+      "QMenu::item { padding: 8px 24px; }"
+      "QMenu::item:selected { background: #2f5d50; color: #fff; }"
+      "QMenu::separator { height: 1px; background: #cfc8bc; margin: 4px 8px; }"));
 
   refresh();
 }
@@ -171,37 +198,104 @@ void MainWindow::refresh()
   rebuildList();
 }
 
-void MainWindow::toggleVisible()
+void MainWindow::showAndFocus()
 {
-  if (isVisible()) {
-    hide();
-    return;
-  }
+  showWithActivationToken({});
+}
 
+void MainWindow::showWithActivationToken(const QString &activationToken)
+{
+  m_pendingActivationToken = activationToken;
+  m_activationApplied = false;
+
+  restoreGeometrySettings();
+  setWindowState(Qt::WindowNoState);
+  showNormal();
   show();
   raise();
-  activateWindow();
-  m_filter->setFocus();
+
+  QTimer::singleShot(0, this, &MainWindow::applyPendingActivation);
+}
+
+void MainWindow::applyPendingActivation()
+{
+  if (m_activationApplied)
+    return;
+  m_activationApplied = true;
+
+  const bool hasToken = !m_pendingActivationToken.isEmpty();
+  const QString token = m_pendingActivationToken;
+  m_pendingActivationToken.clear();
+
+  raise();
+
+  if (isWayland()) {
+    if (hasToken) {
+      qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
+      if (QWindow *wh = windowHandle())
+        wh->requestActivate();
+    } else {
+      centerOnActiveScreen();
+      raise();
+    }
+  } else {
+    if (hasToken)
+      qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
+    activateWindow();
+  }
+
+  m_filter->setFocus(Qt::OtherFocusReason);
   m_filter->selectAll();
+}
+
+void MainWindow::hideToBackground()
+{
+  if (isVisible())
+    saveGeometrySettings();
+  hide();
+}
+
+void MainWindow::centerOnActiveScreen()
+{
+  if (auto *screen = QGuiApplication::screenAt(QCursor::pos())) {
+    const QRect geo = screen->availableGeometry();
+    move(geo.center().x() - width() / 2, geo.center().y() - height() / 2);
+  }
+}
+
+bool MainWindow::isWayland() const
+{
+  return QGuiApplication::platformName().contains(QStringLiteral("wayland"),
+                                                  Qt::CaseInsensitive);
 }
 
 void MainWindow::showEvent(QShowEvent *event)
 {
   QMainWindow::showEvent(event);
   refresh();
-  m_filter->setFocus();
 }
 
 void MainWindow::hideEvent(QHideEvent *event)
 {
-  saveGeometrySettings();
   QMainWindow::hideEvent(event);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+  if (m_exiting) {
+    event->accept();
+    return;
+  }
+
+  // × / Alt-F4 / WM close should not quit the app.
+  event->ignore();
+  hideToBackground();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
   if (event->key() == Qt::Key_Escape) {
-    hide();
+    hideToBackground();
     return;
   }
   QMainWindow::keyPressEvent(event);
@@ -406,6 +500,11 @@ bool MainWindow::handleWindowMouse(QObject *watched, QMouseEvent *mouse,
 
 void MainWindow::restoreGeometrySettings()
 {
+  if (m_savedFrameGeometry.isValid()) {
+    setGeometry(m_savedFrameGeometry);
+    return;
+  }
+
   QSettings settings;
   const QSize size =
       settings.value(QStringLiteral("windowSize"), QSize(460, 520)).toSize();
@@ -422,6 +521,10 @@ void MainWindow::restoreGeometrySettings()
 
 void MainWindow::saveGeometrySettings()
 {
+  if (m_exiting || (windowState() & Qt::WindowMinimized) || !isVisible())
+    return;
+
+  m_savedFrameGeometry = geometry();
   QSettings settings;
   settings.setValue(QStringLiteral("windowSize"), size());
   settings.setValue(QStringLiteral("windowPos"), pos());
@@ -443,7 +546,7 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
       return true;
     }
     if (key->key() == Qt::Key_Escape) {
-      hide();
+      hideToBackground();
       return true;
     }
     if (watched == m_filter
@@ -594,7 +697,15 @@ void MainWindow::pasteCurrent()
   const ClipItem item = m_store->findById(id);
   if (item.id.isEmpty())
     return;
-  hide();
+
+  if (isWayland()) {
+    // On Wayland the clipboard must be set before hiding; then paste with Ctrl+V.
+    m_pasteHelper->copyToClipboard(item);
+    QTimer::singleShot(100, this, &MainWindow::hideToBackground);
+    return;
+  }
+
+  hideToBackground();
   m_pasteHelper->pasteItem(item);
 }
 
@@ -616,4 +727,12 @@ void MainWindow::clearHistory()
     return;
   m_store->clear();
   rebuildList();
+}
+
+void MainWindow::exitApplication()
+{
+  saveGeometrySettings();
+  m_exiting = true;
+  hide();
+  QApplication::quit();
 }
