@@ -1,5 +1,5 @@
 Name:           kobiq
-Version:        0.1.5
+Version:        0.1.6
 Release:        1%{?dist}
 Summary:        kobiQ clipboard manager for Linux
 
@@ -14,6 +14,7 @@ Requires:       qt6-qtbase
 Requires:       qt6-qtbase-gui
 Requires:       python3
 Recommends:     xdotool
+Recommends:     wl-clipboard
 
 %description
 kobiQ is a local-first clipboard manager for Linux. It stores a searchable
@@ -48,7 +49,7 @@ After install, set a GNOME custom shortcut to: kobiq-activate
 %{_metainfodir}/kobiQ.metainfo.xml
 
 %changelog
-* Thu Aug 13 2026 kginonredhat <kginonredhat@users.noreply.github.com> - 0.1.5-1
+* Thu Aug 13 2026 kginonredhat <kginonredhat@users.noreply.github.com> - 0.1.6-1
 - Also copy restored items to Primary Selection (middle-click paste)
 
 * Wed Aug 12 2026 kginonredhat <kginonredhat@users.noreply.github.com> - 0.1.4-1
