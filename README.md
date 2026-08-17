@@ -97,7 +97,7 @@ If Podman fails with `x509: certificate signed by unknown authority` (common on 
 PODMAN_TLS_VERIFY=false ./packaging/build-rpm-multi.sh 42 43
 ```
 
-Or use **GitHub Actions**: tag `v0.1.5` and download the `fc42` / `fc43` / `fc44` RPMs from the workflow artifacts or Release page.
+Or use **GitHub Actions**: tag `v0.1.6` and download the `fc42` / `fc43` / `fc44` RPMs from the workflow artifacts or Release page.
 
 Toggle an already-running instance:
 

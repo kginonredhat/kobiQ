@@ -154,7 +154,11 @@ MainWindow::MainWindow(HistoryStore *store, PasteHelper *pasteHelper, QWidget *p
     QTimer::singleShot(0, this, &MainWindow::exitApplication);
   });
   connect(m_filter, &QLineEdit::textChanged, this, &MainWindow::onFilterChanged);
+  connect(m_filter, &QLineEdit::returnPressed, this, &MainWindow::pasteCurrent);
   connect(m_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *) {
+    pasteCurrent();
+  });
+  connect(m_list, &QListWidget::itemActivated, this, [this](QListWidgetItem *) {
     pasteCurrent();
   });
   connect(pasteBtn, &QPushButton::clicked, this, &MainWindow::pasteCurrent);
@@ -698,10 +702,15 @@ void MainWindow::pasteCurrent()
   if (item.id.isEmpty())
     return;
 
+  // Wayland only accepts a clipboard offer from a focused surface.
+  raise();
+  if (QWindow *wh = windowHandle())
+    wh->requestActivate();
+
   if (isWayland()) {
-    // On Wayland the clipboard must be set before hiding; then paste with Ctrl+V.
+    // Copy first (Qt + wl-copy), then hide so the previous app can receive Ctrl+V.
     m_pasteHelper->copyToClipboard(item);
-    QTimer::singleShot(100, this, &MainWindow::hideToBackground);
+    QTimer::singleShot(80, this, &MainWindow::hideToBackground);
     return;
   }
 

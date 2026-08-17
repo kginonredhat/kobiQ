@@ -2,7 +2,9 @@
 
 #include "HistoryStore.h"
 
+#include <QByteArray>
 #include <QObject>
+#include <QString>
 
 class ClipboardMonitor;
 
@@ -17,7 +19,11 @@ public:
 
 private:
   void putOnClipboard(const ClipItem &item);
+  void putOnClipboardQt(const ClipItem &item);
+  bool offerWithWlCopy(const ClipItem &item);
+  static bool runWlCopy(const QByteArray &bytes, const QString &mimeType, bool primary);
   void simulatePaste();
+  static bool isWayland();
 
   ClipboardMonitor *m_monitor;
 };

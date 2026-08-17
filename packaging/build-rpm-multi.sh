@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.1.5}"
+VERSION="${VERSION:-0.1.6}"
 RELEASE="${RELEASE:-1}"
 HOST_FC="$(rpm -E %fedora 2>/dev/null || echo 0)"
 PODMAN_TLS_VERIFY="${PODMAN_TLS_VERIFY:-true}"
