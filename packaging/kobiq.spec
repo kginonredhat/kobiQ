@@ -1,5 +1,5 @@
 Name:           kobiq
-Version:        0.1.6
+Version:        0.1.7
 Release:        1%{?dist}
 Summary:        kobiQ clipboard manager for Linux
 
@@ -43,12 +43,17 @@ After install, set a GNOME custom shortcut to: kobiq-activate
 %{_bindir}/kobiq-show
 %{_bindir}/kobiq-show-debug
 %{_bindir}/kobiq-activate
+%{_bindir}/kobiq-enable-gnome-monitor
 %{_datadir}/applications/kobiQ.desktop
 %{_datadir}/applications/org.kobiq.Application.desktop
 %{_datadir}/icons/hicolor/scalable/apps/kobiQ.svg
+%{_datadir}/gnome-shell/extensions/kobiq-clipboard-monitor@kobiq.org/
 %{_metainfodir}/kobiQ.metainfo.xml
 
 %changelog
+* Wed Oct 07 2026 kginonredhat <kginonredhat@users.noreply.github.com> - 0.1.7-1
+- GNOME Wayland clipboard monitoring via Shell extension and GPaste fallback
+
 * Thu Aug 13 2026 kginonredhat <kginonredhat@users.noreply.github.com> - 0.1.6-1
 - Also copy restored items to Primary Selection (middle-click paste)
 
