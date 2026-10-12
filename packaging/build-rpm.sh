@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.1.6}"
+VERSION="${VERSION:-0.1.7}"
 RELEASE="${RELEASE:-1}"
 WORKDIR="${WORKDIR:-$(mktemp -d)}"
 NAME="kobiq"

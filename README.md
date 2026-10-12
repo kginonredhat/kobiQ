@@ -97,7 +97,7 @@ If Podman fails with `x509: certificate signed by unknown authority` (common on 
 PODMAN_TLS_VERIFY=false ./packaging/build-rpm-multi.sh 42 43
 ```
 
-Or use **GitHub Actions**: tag `v0.1.6` and download the `fc42` / `fc43` / `fc44` RPMs from the workflow artifacts or Release page.
+Or use **GitHub Actions**: tag `v0.1.7` and download the `fc42` / `fc43` / `fc44` RPMs from the workflow artifacts or Release page.
 
 Toggle an already-running instance:
 
@@ -113,8 +113,23 @@ Settings → Keyboard → Custom Shortcuts:
 | Field    | Value |
 |----------|--------|
 | Name     | kobiQ |
-| Command  | `kobiQ --toggle` |
+| Command  | `kobiq-activate` |
 | Shortcut | Ctrl+\` (tilde / backtick key) |
+
+### Clipboard monitoring on GNOME Wayland
+
+GNOME/Mutter does **not** expose the Wayland data-control protocol, so a
+background Qt app cannot see Ctrl+C from Chrome, Slack, etc. by itself.
+
+After installing the RPM on GNOME:
+
+```bash
+kobiq-enable-gnome-monitor
+# then log out and back in once if the extension was just installed
+```
+
+Or enable **kobiQ Clipboard Monitor** in Extensions. If GPaste is already
+running, kobiQ will also listen to its updates as a fallback.
 
 ## Usage
 

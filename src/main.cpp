@@ -1,5 +1,6 @@
 #include "AppVersion.h"
 #include "ApplicationDBus.h"
+#include "ClipboardIngestDBus.h"
 #include "ClipboardMonitor.h"
 #include "GlobalHotkey.h"
 #include "HistoryStore.h"
@@ -75,17 +76,21 @@ int main(int argc, char *argv[])
   TrayController tray(&window);
   GlobalHotkey hotkey;
   ApplicationDBus dbusApi;
+  ClipboardIngestDBus clipboardIngest(&monitor);
 
   // Use a dedicated D-Bus name. Qt already registers the desktop app id ("kobiQ")
   // with the xdg-desktop-portal; reusing that name here causes registration failures.
   const QString dbusService = QStringLiteral("org.kobiq.Application");
   const QString dbusPath = QStringLiteral("/org/kobiq/Application");
+  const QString clipboardPath = QStringLiteral("/org/kobiq/Clipboard");
   QDBusConnection sessionBus = QDBusConnection::sessionBus();
   if (!sessionBus.registerService(dbusService)) {
     qWarning("Could not register D-Bus service %s: %s", qPrintable(dbusService),
              qPrintable(sessionBus.lastError().message()));
   }
   sessionBus.registerObject(dbusPath, &dbusApi, QDBusConnection::ExportAllSlots);
+  sessionBus.registerObject(clipboardPath, &clipboardIngest,
+                            QDBusConnection::ExportAllSlots);
 
   QObject::connect(&monitor, &ClipboardMonitor::historyChanged, &window,
                    &MainWindow::refresh);

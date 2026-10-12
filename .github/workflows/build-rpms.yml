@@ -1,0 +1,54 @@
+name: Build Fedora RPMs
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version (e.g. 0.1.7)"
+        required: false
+        default: "0.1.7"
+
+permissions:
+  contents: read
+
+jobs:
+  rpm:
+    name: Fedora ${{ matrix.fedora }}
+    runs-on: ubuntu-latest
+    container: fedora:${{ matrix.fedora }}
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora: [42, 43, 44]
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf -y install \
+            cmake gcc-c++ qt6-qtbase-devel \
+            rpm-build rpmdevtools rsync git \
+            libatomic
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build RPM
+        env:
+          VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+        run: |
+          VER="${VERSION#v}"
+          export VERSION="$VER"
+          chmod +x packaging/build-rpm.sh
+          ./packaging/build-rpm.sh
+          mkdir -p "artifact/fedora-${{ matrix.fedora }}"
+          find dist -type f -name '*.rpm' -exec cp -v {} "artifact/fedora-${{ matrix.fedora }}/" \;
+
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: kobiq-fedora-${{ matrix.fedora }}
+          path: artifact/fedora-${{ matrix.fedora }}/*.rpm
+          if-no-files-found: error

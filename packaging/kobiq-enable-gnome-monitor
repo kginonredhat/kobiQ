@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Enable the kobiQ GNOME Shell extension that feeds clipboard changes into
+# kobiQ on Wayland (Mutter has no data-control protocol).
+set -euo pipefail
+
+UUID="kobiq-clipboard-monitor@kobiq.org"
+
+if ! command -v gnome-extensions >/dev/null 2>&1; then
+  echo "gnome-extensions not found. Are you on GNOME?" >&2
+  exit 1
+fi
+
+if ! gnome-extensions list 2>/dev/null | grep -qx "$UUID"; then
+  echo "Extension $UUID is not installed."
+  echo "Install the kobiq package (system extension under"
+  echo "  /usr/share/gnome-shell/extensions/$UUID),"
+  echo "then log out and back in, and re-run this script."
+  exit 1
+fi
+
+gnome-extensions enable "$UUID"
+echo "Enabled $UUID."
+echo "If clipboard history still misses copies, log out and back in once,"
+echo "then restart kobiQ."
